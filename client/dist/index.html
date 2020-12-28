@@ -1,0 +1,94 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <link href="main.css" rel="stylesheet">
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.1/jquery.min.js"></script>
+  <script src='https://www.google.com/recaptcha/api.js'></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/fetch/2.0.1/fetch.js"></script>
+</head>
+<body>
+  <!-- Start HTML for form -->
+  <div class="container">  
+    <form id="contact">
+      <div id='logo'>
+        <img src="https://s3-us-west-2.amazonaws.com/assets.site.serverless.com/blog/twilio-logo.jpg" />
+      </div>
+      <h3>Eduard Bargués Reminders :) </h3>
+      <h4>Fill out this form to send a text message.</h4>
+      <div id='error-message'></div>
+      <div id='success-message'></div>
+      <fieldset>
+        <input id="phone-number" placeholder="Phone Number" type="tel" tabindex="3" required>
+      </fieldset>
+      <fieldset>
+        <textarea id="message" placeholder="Message to client here...." tabindex="5" required></textarea>
+      </fieldset>
+      <div class="g-recaptcha" data-sitekey="your-google-recaptcha-site-key"></div>
+      <fieldset>
+        <button name="submit" type="submit" id="send-text" data-submit="...Sending">Send Message</button>
+      </fieldset>
+      <p class="copyright">Design inspired by <a href="https://app.pluralsight.com/library/courses/aws-nodejs-serverless-framework-using/table-of-contents" target="_blank" title="aws-nodejs-serverless-framework-using">aws-nodejs-using-serverless-framework</a></p>
+    </form>
+  </div>
+
+<script>
+    const API_ENDPOINT = 'your-api-endpoint';
+    var errorDiv = document.getElementById('error-message')
+    var successDiv = document.getElementById('success-message')
+    document.getElementById('send-text').addEventListener('click', function (event) {
+      event.preventDefault()
+
+      const captchtaResponse = grecaptcha.getResponse() || false
+      const textMessage = document.getElementById('message').value
+      const phoneNumber = document.getElementById('phone-number').value
+
+      if (!textMessage) {
+        errorDiv.innerHTML = 'Remember to enter a message!'
+        return false
+      }
+
+      if (!phoneNumber) {
+        errorDiv.innerHTML = 'Don\'t forget to enter a phone number!'
+        return false
+      }
+
+      if (!captchtaResponse) {
+        errorDiv.innerHTML = 'Complete the Captcha please!'
+        return false
+      }
+
+      const data = JSON.stringify({
+        to: phoneNumber,
+        message: textMessage,
+        captcha: captchtaResponse
+      })
+
+      // post to API with native browser Fetch
+      const getdata = fetch(API_ENDPOINT, {
+        headers: {
+          "Content-type": "application/json"
+        },
+        method: 'POST',
+        body: data,
+        mode: 'cors'
+      });
+
+      getdata.then(function(response) {
+        response.json().then(function(data) {
+          console.log('Response:', data);
+          const body = JSON.parse(data.body);
+          errorDiv.textContent = '';
+          if (body.status === 'success') {
+            successDiv.textContent = (body && body.message) ? body.message : '';
+          } else {
+            errorDiv.textContent = (body && body.message) ? body.message : '';
+          };
+        });
+      }).catch(function(err) {
+        console.log(err)
+      });
+    });
+  </script>
+</body>
+</html>
